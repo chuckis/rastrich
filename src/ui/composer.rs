@@ -20,7 +20,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App) {
 
     let block = Block::bordered()
         .title(title)
-        .title_bottom(" Ctrl+Enter send · Esc cancel ")
+        .title_bottom(" Enter send · Alt+Enter newline · Esc cancel ")
         .title_style(theme::title())
         .border_style(theme::border())
         .padding(Padding::uniform(1));

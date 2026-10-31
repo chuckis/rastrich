@@ -91,7 +91,7 @@ fn hint(app: &App) -> String {
     if app.relay_manager.is_some() {
         "a add · d delete · r refresh · Esc close".to_string()
     } else if app.composer.is_some() {
-        "Ctrl+Enter send · Esc cancel".to_string()
+        "Enter send · Alt+Enter newline · Esc cancel".to_string()
     } else if app.profile.is_some() {
         "j/k move · Enter open · r reply · l like · Esc back · ? help".to_string()
     } else if app.thread.is_some() {

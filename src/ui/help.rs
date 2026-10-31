@@ -26,6 +26,8 @@ pub fn render(frame: &mut Frame) {
         Line::from(Span::styled("Actions", heading)),
         Line::from("c                 compose a note"),
         Line::from("r                 reply to selected note"),
+        Line::from("Enter / Ctrl+S    send note (composer)"),
+        Line::from("Alt+Enter         newline (composer)"),
         Line::from("l / +             react with +"),
         Line::from("p                 open author profile"),
         Line::from("R                 manage relays"),

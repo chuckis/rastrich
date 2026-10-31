@@ -433,14 +433,32 @@ impl App {
     }
 
     fn handle_composer_key(&mut self, key: KeyEvent) {
-        if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Enter {
-            self.publish_composer();
-            return;
-        }
         if key.code == KeyCode::Esc {
             self.composer = None;
             return;
         }
+
+        if key.code == KeyCode::Enter {
+            let newline = key
+                .modifiers
+                .intersects(KeyModifiers::ALT | KeyModifiers::SHIFT);
+            if newline {
+                if let Some(composer) = self.composer.as_mut() {
+                    composer.textarea.insert_str("\n");
+                }
+            } else {
+                self.publish_composer();
+            }
+            return;
+        }
+
+        if key.modifiers.contains(KeyModifiers::CONTROL)
+            && matches!(key.code, KeyCode::Char('s') | KeyCode::Char('S'))
+        {
+            self.publish_composer();
+            return;
+        }
+
         if let Some(composer) = self.composer.as_mut() {
             composer.textarea.input(Input::from(key));
         }
@@ -769,7 +787,11 @@ mod tests {
     }
 
     fn press(app: &mut App, code: KeyCode) {
-        app.handle_terminal_event(TerminalEvent::Key(KeyEvent::new(code, KeyModifiers::NONE)));
+        press_with(app, code, KeyModifiers::NONE);
+    }
+
+    fn press_with(app: &mut App, code: KeyCode, modifiers: KeyModifiers) {
+        app.handle_terminal_event(TerminalEvent::Key(KeyEvent::new(code, modifiers)));
     }
 
     #[test]
@@ -832,5 +854,47 @@ mod tests {
         press(&mut app, KeyCode::Char('c'));
 
         assert!(app.composer.is_some());
+    }
+
+    #[test]
+    fn enter_sends_composer_note() {
+        let (commands, mut rx) = mpsc::channel(8);
+        let mut app = App::new(commands);
+        app.apply_update(Update::LoginSuccess {
+            account: account(AccountMode::Local),
+            relays: Vec::new(),
+        });
+
+        press(&mut app, KeyCode::Char('c'));
+        app.composer
+            .as_mut()
+            .unwrap()
+            .textarea
+            .insert_str("hello nostr");
+        press(&mut app, KeyCode::Enter);
+
+        assert!(app.composer.is_none());
+        match rx.try_recv().unwrap() {
+            Command::PublishNote { content, reply_to } => {
+                assert_eq!(content, "hello nostr");
+                assert!(reply_to.is_none());
+            }
+            other => panic!("unexpected command: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn alt_enter_inserts_newline() {
+        let mut app = app();
+        app.apply_update(Update::LoginSuccess {
+            account: account(AccountMode::Local),
+            relays: Vec::new(),
+        });
+
+        press(&mut app, KeyCode::Char('c'));
+        press_with(&mut app, KeyCode::Enter, KeyModifiers::ALT);
+
+        assert!(app.composer.is_some());
+        assert_eq!(app.composer.as_ref().unwrap().text(), "\n");
     }
 }
